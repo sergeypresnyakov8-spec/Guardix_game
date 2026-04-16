@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guardix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <img class="brand-logo" src="assets/guardix-logo.png" alt="Логотип Guardix">
+        <div>
+          <p class="eyebrow">Изготовление курьерских пакетов</p>
+          <h1>Guardix</h1>
+        </div>
+      </div>
+      <div class="topbar-stats">
+        <div class="stat-pill">
+          <span>Изготовлено пакетов</span>
+          <strong id="total-packages">0</strong>
+        </div>
+        <div class="stat-pill">
+          <span>В секунду</span>
+          <strong id="packages-per-second">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <section class="package-panel">
+        <div class="package-score">
+          <p class="score-label">Склад готовой продукции</p>
+          <h2 id="package-count">0</h2>
+          <p class="score-subtitle">Нажимайте на курьерский пакет и расширяйте производство.</p>
+        </div>
+
+        <button id="package-button" class="package-button" type="button" aria-label="Изготовить курьерский пакет">
+          <span class="package-icon" aria-hidden="true">
+            <img class="package-image" src="assets/courier-package.png" alt="">
+          </span>
+          <span class="package-glow"></span>
+        </button>
+
+        <button id="manual-upgrade-button" class="manual-upgrade-button" type="button">
+          <span>Назначить мастера</span>
+          <strong id="manual-upgrade-cost">50</strong>
+        </button>
+
+        <div class="info-grid">
+          <article class="info-card">
+            <span>За клик</span>
+            <strong id="click-power">1</strong>
+          </article>
+          <article class="info-card">
+            <span>Уровень мастера</span>
+            <strong id="manual-level">1</strong>
+          </article>
+          <article class="info-card">
+            <span>Всего кликов</span>
+            <strong id="click-count">0</strong>
+          </article>
+        </div>
+      </section>
+
+      <aside class="shop-panel">
+        <div class="shop-header">
+          <div>
+            <p class="eyebrow">Магазин цеха</p>
+            <h3>Здания и улучшения</h3>
+          </div>
+          <button id="reset-button" class="secondary-button" type="button">Сброс</button>
+        </div>
+
+        <section class="shop-section">
+          <div class="section-title-row">
+            <h4>Производственные здания</h4>
+            <span>11 позиций</span>
+          </div>
+          <div id="buildings-list" class="shop-list"></div>
+        </section>
+
+        <section class="shop-section">
+          <div class="section-title-row">
+            <h4>Разовые супер-улучшения</h4>
+            <span>6 приколов</span>
+          </div>
+          <div id="super-upgrades-list" class="shop-list"></div>
+        </section>
+
+        <section class="shop-section">
+          <div class="section-title-row">
+            <h4>События цеха</h4>
+            <span>Живой статус</span>
+          </div>
+          <div id="events-log" class="events-log"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <template id="building-card-template">
+    <button class="building-card" type="button">
+      <div class="building-card-main">
+        <div>
+          <h5 class="building-name"></h5>
+          <p class="building-description"></p>
+        </div>
+        <div class="building-meta">
+          <strong class="building-count"></strong>
+          <span class="building-pps"></span>
+        </div>
+      </div>
+      <div class="building-card-footer">
+        <span class="building-cost"></span>
+        <span class="building-next">Купить</span>
+      </div>
+    </button>
+  </template>
+
+  <script src="game.js"></script>
+</body>
+</html>
