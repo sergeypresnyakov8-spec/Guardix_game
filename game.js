@@ -26,6 +26,7 @@ const SUPER_UPGRADES = [
 const defaultState = () => ({
   packages: 0,
   totalPackages: 0,
+  packageRemainder: 0,
   clickPower: 1,
   clickCount: 0,
   manualUpgradeLevel: 1,
@@ -43,11 +44,9 @@ const state = loadState();
 
 const elements = {
   packageCount: document.getElementById("package-count"),
-  totalPackages: document.getElementById("total-packages"),
   packagesPerSecond: document.getElementById("packages-per-second"),
   clickPower: document.getElementById("click-power"),
   manualLevel: document.getElementById("manual-level"),
-  clickCount: document.getElementById("click-count"),
   manualUpgradeCost: document.getElementById("manual-upgrade-cost"),
   packageButton: document.getElementById("package-button"),
   manualUpgradeButton: document.getElementById("manual-upgrade-button"),
@@ -56,6 +55,8 @@ const elements = {
   buildingTemplate: document.getElementById("building-card-template"),
   eventsLog: document.getElementById("events-log"),
   resetButton: document.getElementById("reset-button"),
+  packagePanel: document.querySelector(".package-panel"),
+  packageScore: document.querySelector(".package-score"),
 };
 
 function isMojibakeText(value) {
@@ -222,11 +223,9 @@ function renderSuperUpgrades() {
 function renderStats() {
   const packagesPerSecond = calculatePackagesPerSecond();
   elements.packageCount.textContent = formatNumber(state.packages);
-  elements.totalPackages.textContent = formatNumber(state.totalPackages);
   elements.packagesPerSecond.textContent = formatNumber(packagesPerSecond);
   elements.clickPower.textContent = formatNumber(state.clickPower);
   elements.manualLevel.textContent = state.manualUpgradeLevel;
-  elements.clickCount.textContent = formatNumber(state.clickCount);
   elements.manualUpgradeCost.textContent = formatNumber(state.manualUpgradeCost);
   elements.manualUpgradeButton.disabled = state.packages < state.manualUpgradeCost;
 }
@@ -239,8 +238,52 @@ function render() {
 }
 
 function gainPackages(amount) {
-  state.packages += amount;
-  state.totalPackages += amount;
+  const totalAmount = state.packageRemainder + amount;
+  const wholePackages = Math.floor(totalAmount);
+  state.packageRemainder = totalAmount - wholePackages;
+
+  if (wholePackages > 0) {
+    state.packages += wholePackages;
+    state.totalPackages += wholePackages;
+  }
+}
+
+function shouldRefreshShop(previousPackages, nextPackages) {
+  if (nextPackages <= previousPackages) {
+    return false;
+  }
+
+  const buildingBecameAffordable = BUILDINGS.some((building) => {
+    const cost = calculateBuildingCost(building);
+    return previousPackages < cost && nextPackages >= cost;
+  });
+
+  if (buildingBecameAffordable) {
+    return true;
+  }
+
+  return SUPER_UPGRADES.some((upgrade) => {
+    if (state.superUpgradesOwned[upgrade.id]) {
+      return false;
+    }
+
+    return previousPackages < upgrade.cost && nextPackages >= upgrade.cost;
+  });
+}
+
+function playPurchaseEffect(effectType) {
+  if (!elements.packagePanel || !elements.packageScore) {
+    return;
+  }
+
+  elements.packagePanel.classList.remove("purchase-flash", "purchase-flash-strong");
+  elements.packageScore.classList.remove("score-pop", "score-pop-strong");
+
+  void elements.packagePanel.offsetWidth;
+
+  const isStrongEffect = effectType === "super";
+  elements.packagePanel.classList.add(isStrongEffect ? "purchase-flash-strong" : "purchase-flash");
+  elements.packageScore.classList.add(isStrongEffect ? "score-pop-strong" : "score-pop");
 }
 
 function handlePackageClick() {
@@ -271,6 +314,7 @@ function purchaseBuilding(buildingId) {
   state.packages -= cost;
   state.buildingsOwned[buildingId] += 1;
   addEvent("Новое здание", `${building.name} запущен(а) в работу.`);
+  playPurchaseEffect("building");
   render();
   saveState();
 }
@@ -314,6 +358,7 @@ function purchaseSuperUpgrade(upgradeId) {
     addEvent("Супер-улучшение", "Камеры установлены: простои стали подозрительно короткими.");
   }
 
+  playPurchaseEffect("super");
   render();
   saveState();
 }
@@ -328,6 +373,7 @@ function upgradeManualProduction() {
   state.clickPower += 1;
   state.manualUpgradeCost = Math.floor(state.manualUpgradeCost * 2.25);
   addEvent("Мастер усилил участок", `Теперь ручной участок Guardix выпускает ${formatNumber(state.clickPower)} пак. за клик.`);
+  playPurchaseEffect("manual");
   render();
   saveState();
 }
@@ -350,8 +396,13 @@ function gameLoop(now) {
 
   const packagesPerSecond = calculatePackagesPerSecond();
   if (packagesPerSecond > 0) {
+    const packagesBeforeTick = state.packages;
     gainPackages(packagesPerSecond * deltaSeconds);
-    renderStats();
+    if (shouldRefreshShop(packagesBeforeTick, state.packages)) {
+      render();
+    } else {
+      renderStats();
+    }
   }
 
   window.requestAnimationFrame(gameLoop);
