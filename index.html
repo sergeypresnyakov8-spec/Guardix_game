@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="topbar-stats">
-        <div class="stat-pill">
+        <div class="stat-pill tooltip" data-tooltip="Пакетов производится автоматически каждую секунду">
           <span>В секунду</span>
           <strong id="packages-per-second">0</strong>
         </div>
@@ -31,28 +31,28 @@
       <section class="package-panel">
         <div class="package-score">
           <p class="score-label">Склад готовой продукции</p>
-          <h2 id="package-count">0</h2>
+          <h2 id="package-count" class="tooltip" data-tooltip="Текущее количество пакетов на складе">0</h2>
           <p class="score-subtitle">Нажимайте на курьерский пакет и расширяйте производство.</p>
         </div>
 
-        <button id="package-button" class="package-button" type="button" aria-label="Изготовить курьерский пакет">
+        <button id="package-button" class="package-button tooltip" type="button" aria-label="Изготовить курьерский пакет" data-tooltip="Кликайте для производства пакетов!">
           <span class="package-icon" aria-hidden="true">
             <img class="package-image" src="assets/courier-package.png" alt="">
           </span>
           <span class="package-glow"></span>
         </button>
 
-        <button id="manual-upgrade-button" class="manual-upgrade-button" type="button">
+        <button id="manual-upgrade-button" class="manual-upgrade-button tooltip" type="button" data-tooltip="Увеличивает пакетов за клик">
           <span>Купить 1м2 помещений</span>
           <strong id="manual-upgrade-cost">50</strong>
         </button>
 
         <div class="info-grid">
-          <article class="info-card">
+          <article class="info-card tooltip" data-tooltip="Сколько пакетов делается за один клик">
             <span>За клик</span>
             <strong id="click-power">1</strong>
           </article>
-          <article class="info-card">
+          <article class="info-card tooltip" data-tooltip="Уровень ручного участка">
             <span>Кол-во м2</span>
             <strong id="manual-level">1</strong>
           </article>
@@ -86,6 +86,22 @@
 
         <section class="shop-section">
           <div class="section-title-row">
+            <h4>Ежедневные бонусы</h4>
+            <span>Серия: <strong id="daily-streak">0</strong> дней</span>
+          </div>
+          <div id="daily-bonus-list" class="daily-bonus-list"></div>
+        </section>
+
+        <section class="shop-section">
+          <div class="section-title-row">
+            <h4>Задачи дня</h4>
+            <span>Выполнено: <strong id="daily-tasks-completed">0</strong>/4</span>
+          </div>
+          <div id="daily-tasks-list" class="daily-tasks-list"></div>
+        </section>
+
+        <section class="shop-section">
+          <div class="section-title-row">
             <h4>События цеха</h4>
             <span>Живой статус</span>
           </div>
@@ -93,6 +109,13 @@
         </section>
       </aside>
     </main>
+
+    <aside class="events-panel">
+      <div class="events-header">
+        <p class="eyebrow">Журнал событий</p>
+      </div>
+      <div id="events-log" class="events-log"></div>
+    </aside>
   </div>
 
   <template id="building-card-template">
