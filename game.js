@@ -173,7 +173,15 @@ function loadState() {
     }
 
     const parsed = JSON.parse(raw);
-    return {
+    
+    // Миграция старых сохранений - исправляем названия супер-улучшений
+    if (parsed.superUpgradesOwned) {
+      // Удаляем старые ID если они есть
+      delete parsed.superUpgradesOwned["prem_suhovu"];
+      delete parsed.superUpgradesOwned["ds_call"];
+    }
+    
+    const newState = {
       ...defaultState(),
       ...parsed,
       buildingsOwned: {
@@ -207,6 +215,11 @@ function loadState() {
       lastDailyReset: parsed.lastDailyReset || null,
       completedDailyTasks: parsed.completedDailyTasks || [],
     };
+    
+    // Принудительно сохраняем обновленное состояние
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+    
+    return newState;
   } catch (error) {
     console.error("Ошибка загрузки сохранения", error);
     return defaultState();
@@ -915,14 +928,20 @@ function renderAchievements() {
 }
 
 function resetGame() {
-  const confirmed = window.confirm("Сбросить весь прогресс производства?");
+  const confirmed = window.confirm("Вы уверены, что хотите сбросить весь прогресс? Это действие нельзя отменить!");
   if (!confirmed) {
     return;
   }
 
+  localStorage.removeItem(STORAGE_KEY);
   Object.assign(state, defaultState());
   saveState();
   render();
+}
+
+function clearStorage() {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
 }
 
 let lastTick = performance.now();
