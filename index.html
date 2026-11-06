@@ -6,6 +6,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f1624">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Конвейер">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Почтовый конвейер</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
@@ -21,8 +25,11 @@
   #app {
     display: flex; flex-direction: column;
     height: 100vh; height: 100dvh;
-    max-width: 560px; margin: 0 auto;
-    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    width: 100%;
+    max-width: min(560px, calc(100vh * 0.62));
+    max-width: min(560px, calc(100dvh * 0.62));   /* на компьютере остаётся «вертикальный» экран */
+    margin: 0 auto;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
   }
 
   /* ---------- Верхняя панель ---------- */
@@ -31,7 +38,7 @@
     display: grid; grid-template-columns: minmax(0, 1.3fr) auto minmax(0, 1fr); gap: 8px; align-items: center;
     background: linear-gradient(#eef3f8, #cfd9e4);
     color: #1b2433;
-    border: 2px solid #8fa3b8; border-radius: 14px;
+    border-bottom: 3px solid #8fa3b8; border-radius: 0 0 16px 16px;
     padding: 8px 12px;
   }
   #hud .l { font-weight: bold; font-size: clamp(13px, 3.8vw, 19px); line-height: 1.3; white-space: nowrap; }
@@ -45,27 +52,37 @@
   .mini button { width: 38px; height: 38px; border-radius: 10px; border: 2px solid #8fa3b8; background: #fff; font-size: 18px; padding: 0; }
 
   /* ---------- Поле ---------- */
-  #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; margin: 6px 0; }
-  canvas { display: block; border-radius: 14px; touch-action: none; }
+  #stage { position: relative; flex: 1; min-height: 0; }
+  canvas { position: absolute; left: 0; top: 0; display: block; touch-action: none; }
 
-  /* ---------- Кнопки ---------- */
-  #controls { flex: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; padding: 0 8%; }
+  /* ---------- Кнопки: лежат на полу сразу под рельсами ---------- */
+  #controls {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    padding: 12px 14px max(16px, env(safe-area-inset-bottom));
+  }
   .ctl {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    border: none; background: none; color: #fff; padding: 0;
-    font-weight: bold; font-size: clamp(12px, 3.6vw, 16px);
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    height: clamp(80px, 13vh, 110px);
+    border: 4px solid #9fb0c3; border-radius: 24px;
+    background: linear-gradient(#f7fafd, #cbd6e2); color: #243044;
+    font-weight: 900; font-size: clamp(18px, 5.4vw, 26px);
+    box-shadow: 0 6px 0 #6d7f94, 0 10px 18px rgba(0,0,0,.35);
+    padding: 0;
     touch-action: none;
   }
-  .ctl .c {
-    width: clamp(78px, 25vw, 112px); height: clamp(78px, 25vw, 112px);
-    border-radius: 50%;
-    background: radial-gradient(#fff, #d5dee8);
-    border: 5px solid #9fb0c3; color: #243044;
-    font-size: clamp(30px, 9vw, 44px);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 0 #6d7f94;
+  .ctl .ar { font-size: clamp(36px, 10.5vw, 52px); line-height: 1; }
+  .ctl:active { transform: translateY(5px); box-shadow: 0 1px 0 #6d7f94; background: linear-gradient(#e3f0ff, #a9c4e6); }
+
+  /* Игра только вертикальная */
+  #rotate {
+    display: none; position: fixed; inset: 0; z-index: 50;
+    background: #0f1624; color: #facc15; text-align: center;
+    align-items: center; justify-content: center;
+    font-size: 24px; font-weight: bold; line-height: 1.5; padding: 20px;
   }
-  .ctl:active .c { transform: translateY(3px); box-shadow: 0 1px 0 #6d7f94; }
+  #rotate b { display: block; font-size: 54px; }
+  @media (orientation: landscape) and (max-height: 520px) { #rotate { display: flex; } }
 
   /* ---------- Экраны поверх игры ---------- */
   #overlay {
@@ -143,13 +160,16 @@
     </div>
   </div>
 
-  <div id="stage"><canvas id="cv"></canvas></div>
-
-  <div id="controls">
-    <button class="ctl" id="btnLeft"><span class="c">◀</span>ВЛЕВО</button>
-    <button class="ctl" id="btnRight"><span class="c">▶</span>ВПРАВО</button>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="controls">
+      <button class="ctl" id="btnLeft"><span class="ar">◀</span><span>ВЛЕВО</span></button>
+      <button class="ctl" id="btnRight"><span>ВПРАВО</span><span class="ar">▶</span></button>
+    </div>
   </div>
 </div>
+
+<div id="rotate"><div><b>📱</b>Переверни телефон<br>вертикально</div></div>
 
 <div id="overlay">
   <div id="panel">
@@ -217,11 +237,11 @@
   // === Таблица рекордов (Google Apps Script) ===
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwg4SmJ0U8KcBi2n86uL5pOpJF4yOim4gf6AQkIzi9garyq3UAcFLwIfLAPenXNTl-5/exec';
   const GAME_ID = 'packages';
-  const GAME_VERSION = '1.3';
+  const GAME_VERSION = '1.4';
 
   // === Настройки игры ===
-  const W = 360, H = 520;          // логический размер поля
-  const Y0 = 34, Y1 = 392;         // верх и низ конвейера
+  let W = 360, H = 520;            // логический размер поля: ширина фиксирована, высота подстраивается под экран
+  const Y0 = 34; let Y1 = 392;      // верх и низ конвейера (низ считается от высоты экрана и кнопок)
   const ZONE_START = 0.88;         // визуальная зона приёма у робота (доля длины ленты)
   const CATCH_P = 1.0;             // на этой отметке пакет доезжает до робота
   const LEVEL_SECONDS = 30;        // каждые 30 секунд уровень растёт (пакеты быстрее и чаще)
@@ -353,14 +373,19 @@
   function resize() {
     const r = $('stage').getBoundingClientRect();
     if (r.width < 10 || r.height < 10) return;
-    const sc = Math.min(r.width / W, r.height / H);
-    const cssW = Math.floor(W * sc), cssH = Math.floor(H * sc);
+    const sc = r.width / W;                              // картинка растянута на всю ширину экрана
+    const cssW = Math.round(r.width), cssH = Math.round(r.height);
+    H = cssH / sc;                                       // высота поля = всё свободное место
+    const cr = $('controls').getBoundingClientRect();
+    const ctlL = Math.max(0, r.bottom - cr.top) / sc;    // высота зоны кнопок в единицах поля
+    Y1 = clamp(H - ctlL - 66, 260, 1200);                // рельсы заканчиваются прямо над кнопками
     const dpr = window.devicePixelRatio || 1;
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
     ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+    if (window.innerWidth > window.innerHeight && window.innerHeight < 520) pauseGame();   // горизонтально не играем
   }
 
   // ---------- Рисование фона и конвейера ----------
@@ -372,13 +397,15 @@
     // стеллажи с коробками по бокам
     [0, 1].forEach(side => {
       const x = side ? W - 30 : 0;
-      ctx.fillStyle = '#222c3b'; ctx.fillRect(x, 70, 30, 330);
+      const top = 70, bot = Y1 + 8;
+      ctx.fillStyle = '#222c3b'; ctx.fillRect(x, top, 30, bot - top);
       const cols = ['#9a7650', '#b58d5c', '#8a6a45'];
-      for (let i = 0; i < 6; i++) {
+      const n = Math.floor((bot - top - 10) / 52);
+      for (let i = 0; i < n; i++) {
         ctx.fillStyle = cols[(i + side) % 3];
-        ctx.fillRect(x + (side ? 4 : 2), 80 + i * 52, 22, 24);
+        ctx.fillRect(x + (side ? 4 : 2), top + 10 + i * 52, 22, 24);
         ctx.fillStyle = 'rgba(0,0,0,.25)';
-        ctx.fillRect(x, 108 + i * 52, 30, 3);
+        ctx.fillRect(x, top + 38 + i * 52, 30, 3);
       }
     });
     // мониторы
@@ -387,11 +414,17 @@
       ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x + 6, y + 18); ctx.lineTo(x + 14, y + 10); ctx.lineTo(x + 22, y + 16); ctx.lineTo(x + 34, y + 6); ctx.stroke();
     });
-    // пол
-    ctx.fillStyle = '#303847'; ctx.fillRect(0, Y1 + 4, W, H - Y1 - 4);
-    ctx.fillStyle = '#e5b92b';
-    for (let x = -20; x < W; x += 36) {
-      ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + 18, H); ctx.lineTo(x + 28, H - 8); ctx.lineTo(x + 10, H - 8); ctx.closePath(); ctx.fill();
+    // пол под рельсами (на нём лежат кнопки)
+    const fg = ctx.createLinearGradient(0, Y1 + 4, 0, H);
+    fg.addColorStop(0, '#3a4455'); fg.addColorStop(1, '#1d2430');
+    ctx.fillStyle = fg; ctx.fillRect(0, Y1 + 4, W, H - Y1 - 4);
+    ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+    for (let y = Y1 + 92; y < H; y += 34) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    // жёлто-чёрная полоса безопасности под рельсами
+    ctx.fillStyle = '#e5b92b'; ctx.fillRect(0, Y1 + 54, W, 10);
+    ctx.fillStyle = '#1b1f26';
+    for (let x = -10; x < W + 10; x += 24) {
+      ctx.beginPath(); ctx.moveTo(x, Y1 + 64); ctx.lineTo(x + 8, Y1 + 64); ctx.lineTo(x + 18, Y1 + 54); ctx.lineTo(x + 10, Y1 + 54); ctx.closePath(); ctx.fill();
     }
   }
 
@@ -615,7 +648,7 @@
   }
 
   // ---------- Эффекты ----------
-  function addText(x, y, text, color) { game.texts.push({ x, y, text, color, life: 1 }); }
+  function addText(x, y, text, color) { game.texts.push({ x: clamp(x, 70, W - 70), y, text, color, life: 1 }); }
   function burst(x, y, colors) {
     for (let i = 0; i < 10; i++) {
       const a = Math.random() * Math.PI * 2, v = 40 + Math.random() * 90;
@@ -638,8 +671,9 @@
     if (game.banner) {
       ctx.globalAlpha = clamp(game.banner.t, 0, 1);
       ctx.font = 'bold 38px Arial'; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.75)';
-      ctx.strokeText(game.banner.text, W / 2, 210);
-      ctx.fillStyle = '#facc15'; ctx.fillText(game.banner.text, W / 2, 210);
+      const by = Y0 + (Y1 - Y0) * 0.4;
+      ctx.strokeText(game.banner.text, W / 2, by);
+      ctx.fillStyle = '#facc15'; ctx.fillText(game.banner.text, W / 2, by);
       ctx.globalAlpha = 1;
     }
   }
@@ -805,7 +839,21 @@
     updateHud();
   }
 
+  // Полный экран прячет адресную строку браузера (работает после нажатия кнопки)
+  function requestFs() {
+    try {
+      const el = document.documentElement;
+      const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (fn && !document.fullscreenElement && !document.webkitFullscreenElement) {
+        const pr = fn.call(el, { navigationUI: 'hide' });
+        if (pr && pr.catch) pr.catch(() => {});
+      }
+      if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {});
+    } catch (e) {}
+  }
+
   function startGame() {
+    requestFs();
     initAudio();
     resetGame();
     game.state = 'playing';
@@ -982,6 +1030,8 @@
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
   window.addEventListener('resize', resize);
+  document.addEventListener('fullscreenchange', () => setTimeout(resize, 150));
+  document.addEventListener('webkitfullscreenchange', () => setTimeout(resize, 150));
   window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 
   // ---------- Главный цикл ----------
